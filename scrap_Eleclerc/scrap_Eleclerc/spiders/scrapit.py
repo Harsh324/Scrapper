@@ -77,13 +77,13 @@ class ScrapitSpider(scrapy.Spider):
             print(data.keys())
             yield scrapy.Request(
                 url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22NAVIGATION_bon-plan-velo%22%5D%7D",
-                callback=self.parseProduct,
+                callback=self.parseProductPage,
                 headers = self.headers
             )
         else:
             print("Here trying to put some conditions")
 
-    def parseProduct(self, response):
+    def parseProductPage(self, response):
         data = response.json()
 
         print("#################")
@@ -92,6 +92,10 @@ class ScrapitSpider(scrapy.Spider):
 
         print(data.keys())
         print(data['items'][0].keys())
+
+
+    def parseProduct(self, response):
+        data = response.json
 
 
 
