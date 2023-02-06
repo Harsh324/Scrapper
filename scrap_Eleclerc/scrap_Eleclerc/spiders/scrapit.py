@@ -39,8 +39,8 @@ class ScrapitSpider(scrapy.Spider):
 
 
         yield scrapy.Request(
-            url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/NAVIGATION_materiel-de-randonnee?pageType=NAVIGATION&maxDepth=undefined",
-            #url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/{code}?pageType=NAVIGATION&maxDepth=undefined",
+            #url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/NAVIGATION_materiel-de-randonnee?pageType=NAVIGATION&maxDepth=undefined",
+            url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/{code}?pageType=NAVIGATION&maxDepth=undefined",
             callback=self.parse_Sub_Sub,
             headers=self.headers
         )
@@ -58,18 +58,40 @@ class ScrapitSpider(scrapy.Spider):
         print("************************")
         print("************************")
         print("************************")
+
+        headers = {
+
+        }
         # print(data)
-        print("Type of children dict is ", data['children'][0].keys())
-        print("Id = ", data['children'][0]['id'])
-        print("Code = ", data['children'][0]['code'])
-        print("Slug = ", data['children'][0]['slug'])
-        print("Label = ", data['children'][0]['label'])
-        print("Description = ", data['children'][0]['description'])
-        print("attribute = ", data['children'][0]['attributes'])
-        print("breadcrumb = ", data['children'][0]['breadcrumb'])
-        print("nbproducts = ", data['children'][0]['nbProducts'])
-        print("Type = ",type(data))
+        if('children' in data.keys()):
+            print("Type of children dict is ", data['children'][0].keys())
+            print("Id = ", data['children'][0]['id'])
+            print("Code = ", data['children'][0]['code'])
+            print("Slug = ", data['children'][0]['slug'])
+            print("Label = ", data['children'][0]['label'])
+            print("Description = ", data['children'][0]['description'])
+            print("attribute = ", data['children'][0]['attributes'])
+            print("breadcrumb = ", data['children'][0]['breadcrumb'])
+            print("nbproducts = ", data['children'][0]['nbProducts'])
+            print("Type = ",type(data))
+            print(data.keys())
+            yield scrapy.Request(
+                url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22NAVIGATION_bon-plan-velo%22%5D%7D",
+                callback=self.parseProduct,
+                headers = self.headers
+            )
+        else:
+            print("Here trying to put some conditions")
+
+    def parseProduct(self, response):
+        data = response.json()
+
+        print("#################")
+        print("#################")
+        print("#################")
+
         print(data.keys())
+        print(data['items'][0].keys())
 
 
 
