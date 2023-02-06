@@ -9,25 +9,69 @@ class ScrapitSpider(scrapy.Spider):
     }
 
     start_urls = ['https://www.e.leclerc/cat/sport-loisirs']
+    "https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=2&categories=%7B%22code%22:%5B%22NAVIGATION_bon-plan-velo%22%5D%7D"
 
     def parse(self, response):
         yield scrapy.Request(
-            url="https://directory.ntschools.net/api/System/GetAllSchools",
-            callback=self.parse_json,
+            url="https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/NAVIGATION_sport-loisirs?pageType=NAVIGATION&maxDepth=undefined",
+            callback=self.parse_Sub,
             headers=self.headers
         )
 
     def parse_Sub(self, response):
         data = response.json() # Newer version of Scrapy come with shortcut to get JSON data
+        code = data['children'][0]['code']
+        print("Type of children dict is ", data['children'][0].keys())
+        print("Id = ", data['children'][0]['id'])
+        print("Code = ", data['children'][0]['code'])
+        print("Slug = ", data['children'][0]['slug'])
+        print("Label = ", data['children'][0]['label'])
+        print("Description = ", data['children'][0]['description'])
+        print("attribute = ", data['children'][0]['attributes'])
+        print("breadcrumb = ", data['children'][0]['breadcrumb'])
+        print("nbproducts = ", data['children'][0]['nbProducts'])
+        print("Type = ",type(data))
+        print(data.keys())
 
-        for i,school in enumerate(data):
-            school_code = school["itSchoolCode"]
-            yield scrapy.Request(
-                f"https://directory.ntschools.net/api/System/GetSchool?itSchoolCode={school_code}",
-                callback=self.parse_school,
-                headers=self.headers,
-                dont_filter=True # Many schools have the same code, same page, but listed more than once
-            )
+        headers = {
+
+        }
+
+
+        yield scrapy.Request(
+            url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/NAVIGATION_materiel-de-randonnee?pageType=NAVIGATION&maxDepth=undefined",
+            #url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/{code}?pageType=NAVIGATION&maxDepth=undefined",
+            callback=self.parse_Sub_Sub,
+            headers=self.headers
+        )
+        # for i,school in enumerate(data):
+        #     school_code = school["itSchoolCode"]
+        #     yield scrapy.Request(
+        #         f"https://directory.ntschools.net/api/System/GetSchool?itSchoolCode={school_code}",
+        #         callback=self.parse_school,
+        #         headers=self.headers,
+        #         dont_filter=True # Many schools have the same code, same page, but listed more than once
+        #     )
+
+    def parse_Sub_Sub(self, response):
+        data = response.json()
+        print("************************")
+        print("************************")
+        print("************************")
+        # print(data)
+        print("Type of children dict is ", data['children'][0].keys())
+        print("Id = ", data['children'][0]['id'])
+        print("Code = ", data['children'][0]['code'])
+        print("Slug = ", data['children'][0]['slug'])
+        print("Label = ", data['children'][0]['label'])
+        print("Description = ", data['children'][0]['description'])
+        print("attribute = ", data['children'][0]['attributes'])
+        print("breadcrumb = ", data['children'][0]['breadcrumb'])
+        print("nbproducts = ", data['children'][0]['nbProducts'])
+        print("Type = ",type(data))
+        print(data.keys())
+
+
 
 
 
