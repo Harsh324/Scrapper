@@ -9,4 +9,13 @@ import scrapy
 class ScrapEleclercItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
-    pass
+    name                = scrapy.Field()
+    brand               = scrapy.Field()
+    original_price      = scrapy.Field()
+    sale_price          = scrapy.Field()
+    image_url           = scrapy.Field()
+    product_page_url    = scrapy.Field()
+    product_category    = scrapy.Field()
+    stock               = scrapy.Field()
+    sku                 = scrapy.Field()
+    ean                 = scrapy.Field()

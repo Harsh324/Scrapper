@@ -1,15 +1,15 @@
 import scrapy
-
+from scrap_Eleclerc.items import ScrapEleclercItem
 
 class ScrapitSpider(scrapy.Spider):
     name = 'scrapit'
-
+    product_page_url = ''
+    product_category = ''
     headers = {
 
     }
 
     start_urls = ['https://www.e.leclerc/cat/sport-loisirs']
-    "https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=2&categories=%7B%22code%22:%5B%22NAVIGATION_bon-plan-velo%22%5D%7D"
 
     def parse(self, response):
         yield scrapy.Request(
@@ -20,30 +20,36 @@ class ScrapitSpider(scrapy.Spider):
 
     def parse_Sub(self, response):
         data = response.json() # Newer version of Scrapy come with shortcut to get JSON data
-        code = data['children'][0]['code']
-        print("Type of children dict is ", data['children'][0].keys())
-        print("Id = ", data['children'][0]['id'])
-        print("Code = ", data['children'][0]['code'])
-        print("Slug = ", data['children'][0]['slug'])
-        print("Label = ", data['children'][0]['label'])
-        print("Description = ", data['children'][0]['description'])
-        print("attribute = ", data['children'][0]['attributes'])
-        print("breadcrumb = ", data['children'][0]['breadcrumb'])
-        print("nbproducts = ", data['children'][0]['nbProducts'])
-        print("Type = ",type(data))
-        print(data.keys())
+        
+        #print("Size = ", len(data['children']))
+        for Index in range(len(data['children'])):
+            code = data['children'][Index]['code']
+            self.product_category = code
+            self.product_category = self.product_category.replace("NAVIGATION_", "")
+            #print("Type of children dict is ", data['children'][Index].keys())
+        
+            # print("Id = ", data['children'][Index]['id'])
+            print("Code = ", data['children'][Index]['code'])
+            # print("Slug = ", data['children'][Index]['slug'])
+            # print("Label = ", data['children'][Index]['label'])
+            # print("Description = ", data['children'][Index]['description'])
+            # print("attribute = ", data['children'][Index]['attributes'])
+            # print("breadcrumb = ", data['children'][Index]['breadcrumb'])
+            # print("nbproducts = ", data['children'][Index]['nbProducts'])
+            # print("Type = ",type(data))
+            # print(data.keys())
 
-        headers = {
+            headers = {
 
-        }
+            }
 
 
-        yield scrapy.Request(
-            url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/NAVIGATION_materiel-de-randonnee?pageType=NAVIGATION&maxDepth=undefined",
-            #url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/{code}?pageType=NAVIGATION&maxDepth=undefined",
-            callback=self.parse_Sub_Sub,
-            headers=self.headers
-        )
+            yield scrapy.Request(
+                #url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/NAVIGATION_materiel-de-randonnee?pageType=NAVIGATION&maxDepth=undefined",
+                url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/{code}?pageType=NAVIGATION&maxDepth=undefined",
+                callback=self.parse_Sub_Sub,
+                headers=self.headers
+            )
         # for i,school in enumerate(data):
         #     school_code = school["itSchoolCode"]
         #     yield scrapy.Request(
@@ -55,21 +61,102 @@ class ScrapitSpider(scrapy.Spider):
 
     def parse_Sub_Sub(self, response):
         data = response.json()
-        print("************************")
-        print("************************")
-        print("************************")
+        print("*****************************************************************************************")
+        print("*****************************************************************************************")
+
+        headers = {
+
+        }
         # print(data)
-        print("Type of children dict is ", data['children'][0].keys())
-        print("Id = ", data['children'][0]['id'])
-        print("Code = ", data['children'][0]['code'])
-        print("Slug = ", data['children'][0]['slug'])
-        print("Label = ", data['children'][0]['label'])
-        print("Description = ", data['children'][0]['description'])
-        print("attribute = ", data['children'][0]['attributes'])
-        print("breadcrumb = ", data['children'][0]['breadcrumb'])
-        print("nbproducts = ", data['children'][0]['nbProducts'])
-        print("Type = ",type(data))
-        print(data.keys())
+        if('children' in data.keys()):
+            for Index in range(len(data['children'])):
+                code = data['children'][Index]['code']
+                # print("Type of children dict is ", data['children'][Index].keys())
+                # print("Id = ", data['children'][Index]['id'])
+                print("Code = ", data['children'][Index]['code'])
+                # print("Slug = ", data['children'][Index]['slug'])
+                # print("Label = ", data['children'][Index]['label'])
+                # print("Description = ", data['children'][Index]['description'])
+                # print("attribute = ", data['children'][Index]['attributes'])
+                # print("breadcrumb = ", data['children'][Index]['breadcrumb'])
+                # print("nbproducts = ", data['children'][Index]['nbProducts'])
+                # print("Type = ",type(data))
+                # print(data.keys())
+                yield scrapy.Request(
+                    
+                    url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22{code}%22%5D%7D",
+                    callback=self.parseProductPage,
+                    headers = self.headers
+                )
+        else:
+            #print("Here trying to put some conditions")
+            string = "NAVIGATION_" + self.product_category
+            #print("Trying the url , ", f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22" + "NAVIGATION_" + {self.product_category} + "%22%5D%7D")
+            yield scrapy.Request(
+                url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22{string}%22%5D%7D",
+                callback = self.parseProductPage,
+                headers = self.headers
+
+            )
+
+    def parseProductPage(self, response):
+        data = response.json()
+
+        print("#############################################################################################")
+        print("#############################################################################################")
+        # print(data.keys())
+        for Index in range(len(data['items'])):
+            
+            # print(data['items'][Index].keys())
+            # print("slug = ", data['items'][Index]['slug'])
+            print("sku = ", data['items'][Index]['sku'])
+            sku = data['items'][Index]['sku']
+            headers = {
+
+            }
+            # "https://www.e.leclerc/api/rest/live-api/product-details-by-sku/3700092677155"
+            self.product_page_url = f"https://www.e.leclerc/api/rest/live-api/product-details-by-sku/{sku}"
+            yield scrapy.Request(
+                url = f"https://www.e.leclerc/api/rest/live-api/product-details-by-sku/{sku}",
+                callback=self.parseProduct,
+                headers = self.headers
+            )
+        
+
+
+    def parseProduct(self, response):
+        data = response.json()
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        # print(data.keys())
+        # print(data['categories'])
+        # print(data['slug'])
+        # print(data['attributeGroups'][0]['attributes'][5])
+        # Name =  dict_keys(['id', 'sku', 'label', 'slug', 'attributes', 'offers'])
+
+        print("Name = ", data['label'])
+        
+        print("Brand = ", data['attributeGroups'][0]['attributes'][5]['value']['label'])
+        print("Original_price = ", data['variants'][0]['offers'][0]['basePrice']['price']['price'])
+        print("Sale_price = ", data['variants'][0]['offers'][0]['basePrice']['totalPrice']['price'])
+        print("Image_url = ", data['variants'][0]['attributes'][1]['value']['url'])
+        print("Product_page_url = ", self.product_page_url)
+        print("Product_cateogry = ", self.product_category)
+        print("Stock = ",data['variants'][0]['offers'][0]['stock'])
+        print("sku = ", data['sku'])
+        print("Ean = ", data['variants'][0]['attributes'][3]['value'])
+
+        
+
+        print(data['variants'][0].keys())
+        print(data['variants'][0]['attributes'][3].keys())
+        #print(data['variants'][0]['attributes'][3]['value'])
+        print(data['variants'][0]['offers'][0].keys())
+
+        print(data['variants'][0]['offers'][0]['basePrice'])
+
+
+        #item = ScrapEleclercItem()
 
 
 
