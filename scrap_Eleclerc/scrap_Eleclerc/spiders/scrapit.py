@@ -1,3 +1,4 @@
+import math
 import scrapy
 from scrap_Eleclerc.items import ScrapEleclercItem
 
@@ -5,6 +6,7 @@ class ScrapitSpider(scrapy.Spider):
     name = 'scrapit'
     product_page_url = 'https://www.e.leclerc/'
     product_category = ''
+    Count = 0
     headers = {
 
     }
@@ -36,6 +38,7 @@ class ScrapitSpider(scrapy.Spider):
             # print("attribute = ", data['children'][Index]['attributes'])
             # print("breadcrumb = ", data['children'][Index]['breadcrumb'])
             # print("nbproducts = ", data['children'][Index]['nbProducts'])
+            self.Count = data['children'][Index]['nbProducts']
             # print("Type = ",type(data))
             # print(data.keys())
 
@@ -82,12 +85,23 @@ class ScrapitSpider(scrapy.Spider):
                 # print("nbproducts = ", data['children'][Index]['nbProducts'])
                 # print("Type = ",type(data))
                 # print(data.keys())
+                total_prod = math.ceil(data['children'][Index]['nbProducts'] // 90)
                 yield scrapy.Request(
                     
                     url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22{code}%22%5D%7D",
                     callback=self.parseProductPage,
                     headers = self.headers
                 )
+                
+
+                for page in range(2, total_prod + 1):
+                    yield scrapy.Request(
+                    
+                    url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page={page}&categories=%7B%22code%22:%5B%22{code}%22%5D%7D",
+                    callback=self.parseProductPage,
+                    headers = self.headers
+                )
+
         else:
             #print("Here trying to put some conditions")
             string = "NAVIGATION_" + self.product_category
@@ -96,7 +110,13 @@ class ScrapitSpider(scrapy.Spider):
                 url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22{string}%22%5D%7D",
                 callback = self.parseProductPage,
                 headers = self.headers
+            )
 
+            for page in range(2, math.ceil((self.Count // 90)) + 1):
+                yield scrapy.Request(
+                url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page={page}&categories=%7B%22code%22:%5B%22{string}%22%5D%7D",
+                callback = self.parseProductPage,
+                headers = self.headers
             )
 
     def parseProductPage(self, response):
@@ -109,7 +129,7 @@ class ScrapitSpider(scrapy.Spider):
             
             # print(data['items'][Index].keys())
             # print("slug = ", data['items'][Index]['slug'])
-            print("sku = ", data['items'][Index]['sku'])
+            # print("sku = ", data['items'][Index]['sku'])
             sku = data['items'][Index]['sku']
             headers = {
 
@@ -126,6 +146,8 @@ class ScrapitSpider(scrapy.Spider):
 
     def parseProduct(self, response):
         data = response.json()
+        item = ScrapEleclercItem()
+
         # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         # print(data.keys())
@@ -136,29 +158,45 @@ class ScrapitSpider(scrapy.Spider):
         #self.product_page_url = 
 
         # print("Name = ", data['label'])
+        item['name'] = data['label']
 
         for Ind in range(len(data['attributeGroups'][0]['attributes'])):
             if('code' in data['attributeGroups'][0]['attributes'][Ind].keys() and data['attributeGroups'][0]['attributes'][Ind]['code'] == "marque"):
+                item['brand'] = data['attributeGroups'][0]['attributes'][Ind]['value']['label']
                 # print("Brand = ", data['attributeGroups'][0]['attributes'][Ind]['value']['label'])
-                continue
+                break
 
+        item['original_price'] =  data['variants'][0]['offers'][0]['basePrice']['price']['price']
+        item['sale_price'] = data['variants'][0]['offers'][0]['basePrice']['totalPrice']['price']
 
+        item['image_url'] = ""
         # print("Original_price = ", data['variants'][0]['offers'][0]['basePrice']['price']['price'])
         # print("Sale_price = ", data['variants'][0]['offers'][0]['basePrice']['totalPrice']['price'])
 
         for Ind in range(len(data['variants'][0]['attributes'])):
             if('code' in data['variants'][0]['attributes'][Ind].keys() and data['variants'][0]['attributes'][Ind]['code'] =='ean'):
                 # print("Ean = ", data['variants'][0]['attributes'][Ind]['value'])
-                continue
+                item['ean'] = data['variants'][0]['attributes'][Ind]['value']
             elif('type' in data['variants'][0]['attributes'][Ind].keys() and data['variants'][0]['attributes'][Ind]['type'] == 'image'):
                 # print("Image_url = ", data['variants'][0]['attributes'][Ind]['value']['url'])
-                continue
+                if(item['image_url'] == ""):
+                    item['image_url'] = data['variants'][0]['attributes'][Ind]['value']['url']
+                else:
+                    item['image_url'] = item['image_url'] + ";" + data['variants'][0]['attributes'][Ind]['value']['url']
 
 
+        item['product_page_url'] = self.product_page_url + "/fp/" + data['slug'] + "-" + data['sku']
+        item['product_category'] = self.product_category
         # print("Product_page_url = ", self.product_page_url + "/fp/" + data['slug'] + "-" + data['sku'])
         # print("Product_cateogry = ", self.product_category)
 
+        if(data['variants'][0]['offers'][0]['stock'] > 0):
+            item['stock'] = True
+        else:
+            item['stock'] = False
 
+        item['sku'] = data['sku']
+        return item
         # print("Stock = ",data['variants'][0]['offers'][0]['stock'])
         # print("sku = ", data['sku'])
         # f = open("File.txt", "a")
