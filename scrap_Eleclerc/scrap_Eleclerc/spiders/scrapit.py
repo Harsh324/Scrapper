@@ -1,15 +1,15 @@
 import scrapy
-
+from scrap_Eleclerc.items import ScrapEleclercItem
 
 class ScrapitSpider(scrapy.Spider):
     name = 'scrapit'
-
+    product_page_url = ''
+    product_category = ''
     headers = {
 
     }
 
     start_urls = ['https://www.e.leclerc/cat/sport-loisirs']
-    "https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=2&categories=%7B%22code%22:%5B%22NAVIGATION_bon-plan-velo%22%5D%7D"
 
     def parse(self, response):
         yield scrapy.Request(
@@ -21,6 +21,8 @@ class ScrapitSpider(scrapy.Spider):
     def parse_Sub(self, response):
         data = response.json() # Newer version of Scrapy come with shortcut to get JSON data
         code = data['children'][0]['code']
+        self.product_category = code
+        self.product_category = self.product_category.replace("NAVIGATION_", "")
         print("Type of children dict is ", data['children'][0].keys())
         print("Id = ", data['children'][0]['id'])
         print("Code = ", data['children'][0]['code'])
@@ -64,6 +66,7 @@ class ScrapitSpider(scrapy.Spider):
         }
         # print(data)
         if('children' in data.keys()):
+            code = data['children'][0]['code']
             print("Type of children dict is ", data['children'][0].keys())
             print("Id = ", data['children'][0]['id'])
             print("Code = ", data['children'][0]['code'])
@@ -76,7 +79,8 @@ class ScrapitSpider(scrapy.Spider):
             print("Type = ",type(data))
             print(data.keys())
             yield scrapy.Request(
-                url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22NAVIGATION_bon-plan-velo%22%5D%7D",
+                
+                url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22{code}%22%5D%7D",
                 callback=self.parseProductPage,
                 headers = self.headers
             )
@@ -92,10 +96,55 @@ class ScrapitSpider(scrapy.Spider):
 
         print(data.keys())
         print(data['items'][0].keys())
+        print("slug = ", data['items'][0]['slug'])
+        print("sku = ", data['items'][0]['sku'])
+        sku = data['items'][0]['sku']
+        headers = {
+
+        }
+        # "https://www.e.leclerc/api/rest/live-api/product-details-by-sku/3700092677155"
+        self.product_page_url = f"https://www.e.leclerc/api/rest/live-api/product-details-by-sku/{sku}"
+        yield scrapy.Request(
+            url = f"https://www.e.leclerc/api/rest/live-api/product-details-by-sku/{sku}",
+            callback=self.parseProduct,
+            headers = self.headers
+        )
+        
 
 
     def parseProduct(self, response):
-        data = response.json
+        data = response.json()
+        print("!!!!!!!!!!!!!!!!!")
+        print("!!!!!!!!!!!!!!!!!")
+        print("!!!!!!!!!!!!!!!!!")
+        print(data.keys())
+        #print(data['categories'])
+        #print(data['slug'])
+        #print(data['attributeGroups'][0]['attributes'][5])
+        #Name =  dict_keys(['id', 'sku', 'label', 'slug', 'attributes', 'offers'])
+
+        print("Name = ", data['label'])
+        print("Brand = ", data['attributeGroups'][0]['attributes'][5]['value']['label'])
+        print("Original_price = ", data['variants'][0]['offers'][0]['basePrice']['price']['price'])
+        print("Sale_price = ", data['variants'][0]['offers'][0]['basePrice']['totalPrice']['price'])
+        print("Image_url = ", data['variants'][0]['attributes'][1]['value']['url'])
+        print("Product_page_url = ", self.product_page_url)
+        print("Product_cateogry = ", self.product_category)
+        print("Stock = ",data['variants'][0]['offers'][0]['stock'])
+        print("sku = ", data['sku'])
+        print("Ean = ", data['variants'][0]['attributes'][3]['value'])
+
+        
+
+        print(data['variants'][0].keys())
+        print(data['variants'][0]['attributes'][3].keys())
+        #print(data['variants'][0]['attributes'][3]['value'])
+        print(data['variants'][0]['offers'][0].keys())
+
+        print(data['variants'][0]['offers'][0]['basePrice'])
+
+
+        #item = ScrapEleclercItem()
 
 
 
