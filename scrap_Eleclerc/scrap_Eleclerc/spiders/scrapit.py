@@ -22,37 +22,69 @@ class ScrapitSpider(scrapy.Spider):
 
     def parse_Sub(self, response):
         data = response.json() # Newer version of Scrapy come with shortcut to get JSON data
+
+        for Index in range(len(data['children'])):
+                code = data['children'][Index]['code']
+                # print("Type of children dict is ", data['children'][Index].keys())
+                # print("Id = ", data['children'][Index]['id'])
+                # print("Code = ", data['children'][Index]['code'])
+                # print("Slug = ", data['children'][Index]['slug'])
+                # print("Label = ", data['children'][Index]['label'])
+                # print("Description = ", data['children'][Index]['description'])
+                # print("attribute = ", data['children'][Index]['attributes'])
+                # print("breadcrumb = ", data['children'][Index]['breadcrumb'])
+                # print("nbproducts = ", data['children'][Index]['nbProducts'])
+                # print("Type = ",type(data))
+                # print(data.keys())
+
+                self.product_category = code
+                total_prod = math.ceil(data['children'][Index]['nbProducts'] // 90)
+                yield scrapy.Request(
+                    
+                    url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page=1&categories=%7B%22code%22:%5B%22{code}%22%5D%7D",
+                    callback=self.parseProductPage,
+                    headers = self.headers
+                )
+                
+
+                for page in range(2, total_prod + 1):
+                    yield scrapy.Request(
+                    
+                    url = f"https://www.e.leclerc/api/rest/live-api/product-search?language=fr-FR&size=90&sorts=%5B%5D&page={page}&categories=%7B%22code%22:%5B%22{code}%22%5D%7D",
+                    callback=self.parseProductPage,
+                    headers = self.headers
+                )
         
         #print("Size = ", len(data['children']))
-        for Index in range(len(data['children'])):
-            code = data['children'][Index]['code']
-            self.product_category = code
-            self.product_category = self.product_category.replace("NAVIGATION_", "")
-            #print("Type of children dict is ", data['children'][Index].keys())
+        # for Index in range(len(data['children'])):
+        #     code = data['children'][Index]['code']
+        #     self.product_category = code
+        #     self.product_category = self.product_category.replace("NAVIGATION_", "")
+        #     #print("Type of children dict is ", data['children'][Index].keys())
         
-            # print("Id = ", data['children'][Index]['id'])
-            # print("Code = ", data['children'][Index]['code'])
-            # print("Slug = ", data['children'][Index]['slug'])
-            # print("Label = ", data['children'][Index]['label'])
-            # print("Description = ", data['children'][Index]['description'])
-            # print("attribute = ", data['children'][Index]['attributes'])
-            # print("breadcrumb = ", data['children'][Index]['breadcrumb'])
-            # print("nbproducts = ", data['children'][Index]['nbProducts'])
-            self.Count = data['children'][Index]['nbProducts']
-            # print("Type = ",type(data))
-            # print(data.keys())
+        #     # print("Id = ", data['children'][Index]['id'])
+        #     # print("Code = ", data['children'][Index]['code'])
+        #     # print("Slug = ", data['children'][Index]['slug'])
+        #     # print("Label = ", data['children'][Index]['label'])
+        #     # print("Description = ", data['children'][Index]['description'])
+        #     # print("attribute = ", data['children'][Index]['attributes'])
+        #     # print("breadcrumb = ", data['children'][Index]['breadcrumb'])
+        #     # print("nbproducts = ", data['children'][Index]['nbProducts'])
+        #     self.Count = data['children'][Index]['nbProducts']
+        #     # print("Type = ",type(data))
+        #     # print(data.keys())
 
-            headers = {
+        #     headers = {
 
-            }
+        #     }
 
 
-            yield scrapy.Request(
-                #url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/NAVIGATION_materiel-de-randonnee?pageType=NAVIGATION&maxDepth=undefined",
-                url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/{code}?pageType=NAVIGATION&maxDepth=undefined",
-                callback=self.parse_Sub_Sub,
-                headers=self.headers
-            )
+        #     yield scrapy.Request(
+        #         #url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/NAVIGATION_materiel-de-randonnee?pageType=NAVIGATION&maxDepth=undefined",
+        #         url = f"https://www.e.leclerc/api/rest/live-api/categories-tree-by-code/{code}?pageType=NAVIGATION&maxDepth=undefined",
+        #         callback=self.parse_Sub_Sub,
+        #         headers=self.headers
+        #     )
         # for i,school in enumerate(data):
         #     school_code = school["itSchoolCode"]
         #     yield scrapy.Request(
@@ -186,17 +218,29 @@ class ScrapitSpider(scrapy.Spider):
 
 
         item['product_page_url'] = self.product_page_url + "/fp/" + data['slug'] + "-" + data['sku']
+        
+
         item['product_category'] = self.product_category
         # print("Product_page_url = ", self.product_page_url + "/fp/" + data['slug'] + "-" + data['sku'])
         # print("Product_cateogry = ", self.product_category)
 
-        if(data['variants'][0]['offers'][0]['stock'] > 0):
-            item['stock'] = True
-        else:
-            item['stock'] = False
+        for Ind in range(len(data['variants'][0]['offers'][0]['additionalFields'])):
+            if('code' in data['variants'][0]['offers'][0]['additionalFields'][Ind].keys()):
+                if(data['variants'][0]['offers'][0]['additionalFields'][Ind]['code'] == 'availability-status'):
+                    if(data['variants'][0]['offers'][0]['additionalFields'][Ind]['value'] == 'in-stock'):
+                        item['stock'] = True
+                    else:
+                        item['stock'] = False
+                    break
+
+
+        # if(data['variants'][0]['offers'][0]['stock'] > 0):
+        #     item['stock'] = True
+        # else:
+        #     item['stock'] = False
 
         item['sku'] = data['sku']
-        return item
+        yield item
         # print("Stock = ",data['variants'][0]['offers'][0]['stock'])
         # print("sku = ", data['sku'])
         # f = open("File.txt", "a")
