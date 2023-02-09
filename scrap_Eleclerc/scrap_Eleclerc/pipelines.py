@@ -16,9 +16,13 @@ class ScrapEleclercPipeline:
             27017
         )
 
-        db = self.conn['scrap']
-        self.collection = db['scrap_db1']
+        '''Database name'''
+        db = self.conn['harshTripathi']
+
+        '''collections name'''
+        self.collection = db['leclerc_fr']
 
     def process_item(self, item, spider):
+        '''item container is inserted to the mongodb database'''
         self.collection.insert_one(dict(item))
         return item
