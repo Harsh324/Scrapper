@@ -57,7 +57,7 @@ class ScrapitSpider(scrapy.Spider):
 
 
                 # response:
-            
+                        Object for crawling the websites
         """
 
         data = response.json()
@@ -89,6 +89,7 @@ class ScrapitSpider(scrapy.Spider):
 
 
                 # response:
+                        Object for crawling the websites
             
         """
 
@@ -118,6 +119,8 @@ class ScrapitSpider(scrapy.Spider):
 
 
                 # response:
+                        Object for crawling the websites
+
             
         """
 
